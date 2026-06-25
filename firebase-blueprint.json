@@ -1,0 +1,259 @@
+
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the MyExpert platform, encompassing both customers and experts, with basic profile information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the user."
+        },
+        "userType": {
+          "type": "string",
+          "description": "The role of the user on the platform (e.g., 'Customer', 'Expert')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "firstName",
+        "lastName",
+        "userType",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Expert": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Expert",
+      "type": "object",
+      "description": "Stores detailed information specific to an expert user, linked to a User entity.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Expert entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the associated User."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A detailed biography of the expert."
+        },
+        "summary": {
+          "type": "string",
+          "description": "A short summary of the expert's profile."
+        },
+        "location": {
+          "type": "string",
+          "description": "The general geographic location of the expert."
+        },
+        "serviceType": {
+          "type": "string",
+          "description": "The type of service provided."
+        },
+        "online": {
+          "type": "boolean",
+          "description": "Whether the expert is currently online/connected."
+        },
+        "acceptingBookings": {
+          "type": "boolean",
+          "description": "Whether the expert is currently accepting new bookings."
+        },
+        "workingNow": {
+          "type": "boolean",
+          "description": "Whether the expert is currently working on an active booking."
+        },
+        "lastSeen": {
+          "type": "string",
+          "description": "Timestamp of the expert's last activity.",
+          "format": "date-time"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Average rating of the expert."
+        },
+        "reviewCount": {
+          "type": "number",
+          "description": "Total number of reviews received."
+        }
+      }
+    },
+    "Service": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Service",
+      "type": "object",
+      "description": "Defines a specific type of service.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Service entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the service."
+        }
+      }
+    },
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
+      "type": "object",
+      "description": "Represents feedback for an expert.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Review entity."
+        },
+        "expertId": {
+          "type": "string"
+        },
+        "customerId": {
+          "type": "string"
+        },
+        "customerName": {
+          "type": "string"
+        },
+        "rating": {
+          "type": "number"
+        },
+        "comment": {
+          "type": "string"
+        },
+        "bookingId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "Booking": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Booking",
+      "type": "object",
+      "description": "Details a service booking.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "participantIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "isReviewed": {
+          "type": "boolean",
+          "description": "Whether this booking has been reviewed by the customer."
+        }
+      }
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Stores alerts for users.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" }
+      }
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "google.com"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Core user profiles."
+        }
+      },
+      {
+        "path": "/experts/{expertId}",
+        "definition": {
+          "entityName": "Expert",
+          "schema": {
+            "$ref": "#/backend/entities/Expert"
+          },
+          "description": "Detailed profiles for experts."
+        }
+      },
+      {
+        "path": "/services/{serviceId}",
+        "definition": {
+          "entityName": "Service",
+          "schema": {
+            "$ref": "#/backend/entities/Service"
+          },
+          "description": "Available service types."
+        }
+      },
+      {
+        "path": "/bookings/{bookingId}",
+        "definition": {
+          "entityName": "Booking",
+          "schema": {
+            "$ref": "#/backend/entities/Booking"
+          },
+          "description": "Service bookings."
+        }
+      },
+      {
+        "path": "/experts/{expertId}/reviews/{reviewId}",
+        "definition": {
+          "entityName": "Review",
+          "schema": {
+            "$ref": "#/backend/entities/Review"
+          },
+          "description": "Customer reviews."
+        }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "User notifications."
+        }
+      }
+    ]
+  }
+}

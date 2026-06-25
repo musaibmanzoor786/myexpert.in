@@ -1,0 +1,10 @@
+{
+  "name": "Remix: MyExpert",
+  "description": "Premium, mobile-responsive local services marketplace matching top-tier native platforms like Uber. Features an instant 1-click geographic location lock, and a real-time sweeping radar booking funnel for plumber, electrician, and carpenter services.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "banners": [
+    {
+      "url": "/assets/images/banner1.webp",
+      "hint": "banner 1",
+      "alt": "Book Top Experts in Your City"
+    },
+    {
+      "url": "/assets/images/banner2.webp",
+      "hint": "banner 2",
+      "alt": "Verified & trusted home service professionals"
+    },
+    {
+      "url": "/assets/images/banner3.webp",
+      "hint": "banner 3",
+      "alt": "Hassle-free expert service booking process"
+    }
+  ],
+  "onboarding": {
+    "city": "https://picsum.photos/seed/location-city/600/600"
+  },
+  "services": {
+    "plumber": {
+      "url": "/assets/icons/plumber.png",
+      "hint": "plumber fixing sink"
+    },
+    "electrician": {
+      "url": "/assets/icons/electrician.png",
+      "hint": "electrician wiring panel"
+    },
+    "carpenter": {
+      "url": "/assets/icons/carpenter.png",
+      "hint": "carpenter cutting wood"
+    },
+    "painter": {
+      "url": "/assets/icons/painter.png",
+      "hint": "painter painting wall"
+    },
+    "acRepair": {
+      "url": "/assets/icons/ac.png",
+      "hint": "technician repairing ac"
+    },
+    "mechanic": {
+      "url": "/assets/icons/mechanic.png",
+      "hint": "mechanic fixing car"
+    },
+    "beautician": {
+      "url": "/assets/icons/beautician.png",
+      "hint": "beautician doing makeup"
+    },
+    "tailor": {
+      "url": "/assets/icons/tailor.png",
+      "hint": "tailor sewing fabric"
+    },
+    "doctor": {
+      "url": "/assets/icons/doctor.png",
+      "hint": "doctor with stethoscope"
+    },
+    "nurse": {
+      "url": "/assets/icons/nurse.png",
+      "hint": "nurse assisting patient"
+    },
+    "yogaTrainer": {
+      "url": "/assets/icons/yoga.png",
+      "hint": "person in yoga"
+    },
+    "cook": {
+      "url": "/assets/icons/cook.png",
+      "hint": "chef preparing food"
+    },
+    "driver": {
+      "url": "/assets/icons/driver.png",
+      "hint": "driver in car"
+    },
+    "photographer": {
+      "url": "/assets/icons/photographer.png",
+      "hint": "photographer holding camera"
+    },
+    "cctvInstaller": {
+      "url": "/assets/icons/cctv.png",
+      "hint": "installing cctv camera"
+    },
+    "webDeveloper": {
+      "url": "/assets/icons/developer.png",
+      "hint": "developer writing code"
+    },
+    "tutor": {
+      "url": "/assets/icons/tutor.png",
+      "hint": "tutor teaching student"
+    },
+    "mobileRepair": {
+      "url": "/assets/icons/mobile.png",
+      "hint": "technician repairing phone"
+    },
+    "civilEngineer": {
+      "url": "/assets/icons/engineer.png",
+      "hint": "engineer at construction"
+    },
+    "eventPlanner": {
+      "url": "/assets/icons/event.png",
+      "hint": "event wedding decoration"
+    },
+    "therapist": {
+      "url": "/assets/icons/therapist.png",
+      "hint": "therapist counseling session"
+    },
+    "financialPlanner": {
+      "url": "/assets/icons/finance.png",
+      "hint": "financial planning charts"
+    },
+    "lawyer": {
+      "url": "/assets/icons/lawyer.png",
+      "hint": "lawyer in court"
+    },
+    "houseCleaner": {
+      "url": "/assets/icons/cleaning.png",
+      "hint": "person cleaning house"
+    }
+  }
+}

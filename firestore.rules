@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return request.auth != null && request.auth.token.email == 'suhaibmanzoormugloo13@gmail.com'; }
+    function isOwner(userId) { return request.auth != null && request.auth.uid == userId; }
+
+    // 2. Experts Collection
+    match /experts/{expertId} {
+      allow read: if true; 
+      allow write: if isOwner(expertId) || isAdmin();
+      
+      // Explicitly allow reading reviews under the expert
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow write: if isSignedIn();
+      }
+    }
+
+    // 3. Users Collection
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    // 4. Bookings Collection
+    match /bookings/{bookingId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // 5. Services Collection
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

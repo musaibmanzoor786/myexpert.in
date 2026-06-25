@@ -1,0 +1,22 @@
+{
+  "short_name": "MyExpert",
+  "name": "MyExpert - Kashmir's Local Home Expert",
+  "description": "Kashmir's Own Local Home Expert Booking App. Find and book trusted local experts.",
+  "icons": [
+    {
+      "src": "/assets/icons/plumber.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/assets/icons/plumber.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "orientation": "portrait"
+}
