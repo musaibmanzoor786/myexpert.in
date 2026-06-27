@@ -171,3 +171,21 @@ export const languagesList = [
   { id: 'telugu', label: 'Telugu' },
   { id: 'tamil', label: 'Tamil' },
 ];
+
+export const whyChooseUsData = [
+    {
+        title: 'Reliable Service',
+        description: 'Always on time',
+        imageUrl: '/assets/images/why-choose-us/1.png',
+    },
+    {
+        title: 'Skilled Pros',
+        description: 'Expert workmanship',
+        imageUrl: '/assets/images/why-choose-us/2.png',
+    },
+    {
+        title: 'Verified Experts',
+        description: 'Trusted & safe',
+        imageUrl: '/assets/images/why-choose-us/3.png',
+    },
+];

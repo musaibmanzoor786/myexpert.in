@@ -21,6 +21,7 @@ export const updateExpertStatus = async (
     status: ExpertStatus
 ) => {
     const expertRef = doc(db, 'experts', expertId);
+    const userRef = doc(db, 'users', expertId);
     
     let updateFields: { 
         status: ExpertStatus;
@@ -45,6 +46,14 @@ export const updateExpertStatus = async (
         ...updateFields,
         lastSeen: serverTimestamp(),
     });
+
+    try {
+        await updateDoc(userRef, {
+            isActive: status !== 'offline',
+        });
+    } catch (err) {
+        console.warn("Could not update users collection status for expert:", err);
+    }
 };
 
 export const getExperts = async (

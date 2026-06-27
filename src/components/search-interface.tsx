@@ -184,33 +184,7 @@ export function SearchInterface() {
                             </div>
                         </div>
 
-                        {/* FULL CATEGORY CATALOGUE */}
-                        <div className="space-y-4">
-                            <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">
-                                Browse All Platforms
-                            </h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                {servicesList.map(service => (
-                                    <button
-                                        key={service.name}
-                                        onClick={() => handleServiceClick(service.name)}
-                                        className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm transition-all hover:border-primary/20 active:scale-95 text-left group"
-                                    >
-                                        <div className="p-2.5 bg-primary/5 text-primary rounded-xl shrink-0 group-hover:scale-105 transition-transform">
-                                            <service.icon className="w-5 h-5" />
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-sm font-black text-slate-850">
-                                                {service.name}
-                                            </span>
-                                            <span className="text-[10px] text-muted-foreground font-semibold truncate leading-none mt-1">
-                                                {service.tagline}
-                                            </span>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+
                     </>
                 ) : (
                     /* DYNAMIC AC-SEARCH RESULTS WITH AUTO-MATCHED TYPING PATHS */

@@ -35,21 +35,26 @@ export function ExpertCard({ expert, problem }: ExpertCardProps) {
   }, [lat, lng, expert.currentLocation]);
   
   const handleCardClick = () => {
+    if (expert.status === 'busy') return;
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(`expert_profile_${expert.id}`, JSON.stringify(expert));
+    }
     router.push(`/experts/${expert.id}`);
   };
 
   const handleViewProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (expert.status === 'busy') return;
     handleCardClick();
   }
   
   const handleBookClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user) {
-      router.push('/login');
-      return;
+    if (expert.status === 'busy') return;
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(`expert_profile_${expert.id}`, JSON.stringify(expert));
     }
-    setIsModalOpen(true);
+    router.push(`/experts/${expert.id}`);
   };
   
   const getInitials = (name: string) => {
@@ -67,61 +72,58 @@ export function ExpertCard({ expert, problem }: ExpertCardProps) {
   return (
     <>
       <Card 
-        onClick={handleCardClick}
-        className="group relative w-full overflow-hidden border-border/40 bg-card transition-all duration-300 active:scale-[0.98] shadow-sm hover:shadow-xl hover:border-primary/20"
+        onClick={expert.status === 'busy' ? undefined : handleCardClick}
+        className={cn(
+          "group relative w-full overflow-hidden border border-slate-100 bg-white transition-all duration-300 shadow-sm rounded-[2rem]",
+          expert.status === 'busy' 
+            ? "opacity-60 saturate-50 cursor-not-allowed" 
+            : "hover:-translate-y-0.5 hover:shadow-md hover:border-primary/20 active:scale-[0.99] cursor-pointer"
+        )}
       >
-        <CardContent className="p-4">
+        <CardContent className="p-5">
             <div className="flex gap-4">
                 {/* Profile Photo with Status Ring */}
                 <div className="relative shrink-0">
-                    <Avatar className="w-16 h-16 rounded-2xl border-2 border-background shadow-sm">
+                    <Avatar className="w-16 h-16 rounded-[1.5rem] border-2 border-slate-50 shadow-sm">
                         <AvatarImage src={expert.profilePictureUrl} alt={expert.name} className="object-cover" />
-                        <AvatarFallback className="bg-primary/5 text-primary text-xl font-black rounded-2xl">
+                        <AvatarFallback className="bg-primary/5 text-primary text-xl font-black rounded-[1.5rem]">
                             {getInitials(expert.name)}
                         </AvatarFallback>
                     </Avatar>
                     <div className={cn(
-                        "absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-background flex items-center justify-center",
+                        "absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase text-white border border-white shadow-sm",
                         expert.status === 'busy' ? "bg-orange-500" : "bg-green-500"
                     )}>
-                        {expert.status === 'busy' ? <ZapOff className="w-3 h-3 text-white" /> : <Zap className="w-3 h-3 text-white fill-current" />}
+                        {expert.status === 'busy' ? 'Busy' : 'Online'}
                     </div>
                 </div>
 
                 {/* Info Section */}
                 <div className="flex-1 min-w-0 py-0.5">
                     <div className="flex justify-between items-start gap-2">
-                        <h3 className="text-base font-black tracking-tight flex items-center gap-1.5 truncate">
+                        <h3 className="text-base font-black tracking-tight text-slate-800 flex items-center gap-1.5 truncate group-hover:text-primary transition-colors">
                           {expert.name}
                           {expert.isVerified && <CheckCircle className="w-4 h-4 text-primary fill-primary/10 shrink-0" />}
                         </h3>
                     </div>
                     
-                    <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center gap-1">
-                            <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                            <span className="text-xs font-black">{expert.rating || 'New'}</span>
+                    <div className="flex items-center flex-wrap gap-2 mt-1">
+                        <div className="inline-flex items-center gap-1 bg-amber-500/[0.08] text-amber-700 border border-amber-500/10 px-2 py-0.5 rounded-lg text-[10px] font-black">
+                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                            <span>{expert.rating || 'New'}</span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground font-bold">•</span>
-                        <span className="text-xs text-muted-foreground font-bold truncate">
-                            {expert.title}
+                        <span className="text-xs text-slate-500 font-extrabold truncate bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-lg">
+                             {expert.title || expert.serviceType}
                         </span>
-                        {expert.status === 'busy' && (
-                            <>
-                                <span className="text-[10px] text-muted-foreground font-bold">•</span>
-                                <span className="text-xs font-black text-orange-600 truncate">Busy</span>
-                            </>
-                        )}
                     </div>
 
-                    <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground font-medium">
-                        <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-primary/60" />
-                            <span className="truncate">{expert.area || expert.location}</span>
+                    <div className="flex items-center gap-3 mt-2.5 text-[11px] text-slate-500 font-medium">
+                        <div className="flex items-center gap-1 bg-slate-50/50 px-2 py-0.5 rounded-lg border border-slate-100/50">
+                            <MapPin className="w-3 h-3 text-slate-400" />
+                            <span className="truncate max-w-[120px]">{expert.area || expert.location}</span>
                         </div>
                         {calculatedDistance !== null && (
-                            <div className="flex items-center gap-1 text-primary">
-                                <span className="text-muted-foreground/30">•</span>
+                            <div className="flex items-center gap-1 text-primary bg-primary/[0.04] px-2 py-0.5 rounded-lg border border-primary/5">
                                 <span className="font-extrabold text-[11px] flex items-center gap-0.5 whitespace-nowrap">
                                     📍 {calculatedDistance.toFixed(1)} km away
                                 </span>
@@ -132,22 +134,14 @@ export function ExpertCard({ expert, problem }: ExpertCardProps) {
             </div>
             
             {/* Quick Action Bar */}
-            <div className="mt-4 pt-4 border-t border-border/40 flex items-center gap-2">
+            <div className="mt-4 pt-4 border-t border-slate-100">
                 <Button 
                     onClick={handleBookClick} 
                     disabled={expert.status === 'busy'}
                     size="sm"
-                    className="flex-1 h-10 rounded-xl text-xs font-black uppercase tracking-wider shadow-none"
+                    className="w-full h-11 rounded-2xl text-xs font-black uppercase tracking-wider transition-all duration-300 bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-primary/10 active:scale-95 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
                 >
-                    {expert.status === 'busy' ? 'Busy' : 'Book Now'}
-                </Button>
-                <Button 
-                    variant="secondary"
-                    onClick={handleViewProfileClick}
-                    size="sm"
-                    className="flex-1 h-10 rounded-xl text-xs font-black uppercase tracking-wider bg-secondary/50 hover:bg-secondary"
-                >
-                    Profile
+                    {expert.status === 'busy' ? 'Currently Busy' : 'Book Now'}
                 </Button>
             </div>
         </CardContent>

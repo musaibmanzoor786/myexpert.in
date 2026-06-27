@@ -98,6 +98,7 @@ export function BookingConfirmationModal({ expert, isOpen, onClose, problem }: B
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
         side="bottom" 
+        hideClose
         className="h-[92dvh] w-screen max-w-none sm:max-w-none p-0 border-none rounded-t-[2.5rem] flex flex-col bg-background shadow-2xl"
       >
         <SheetHeader className="px-6 pt-6 pb-4 border-b border-border/10 flex flex-row items-center shrink-0">

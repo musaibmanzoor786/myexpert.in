@@ -16,7 +16,10 @@ import {
   Headset, 
   Trash2, 
   LogOut,
-  User
+  User,
+  ClipboardList,
+  Gift,
+  Share2
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -91,7 +94,7 @@ export function CustomerProfile({ customer }: CustomerProfileProps) {
     <div className="min-h-screen bg-[#F8F9FB]">
       <div className="w-full">
       {/* Native-Style Compact Header */}
-      <div className="bg-[#1A3C34] text-white px-5 pt-10 pb-10 shadow-lg">
+      <div className="bg-[#1A3C34] text-white px-5 pt-14 pb-14 rounded-b-[2.5rem] shadow-lg">
         <div className="flex items-center gap-3 mb-6">
           <Button 
             variant="ghost" 
@@ -123,23 +126,64 @@ export function CustomerProfile({ customer }: CustomerProfileProps) {
       </div>
 
       {/* High-Density Menu Sections */}
-      <div className="space-y-0 pb-24">
-        {/* Core Actions Group */}
-        <div>
-          <ProfileMenuItem icon={Calendar} label="Your bookings" onClick={handleBookingsClick} />
-          <ProfileMenuItem icon={MapPin} label="Address book" href="/select-location" />
+      <div className="px-2 -mt-6 space-y-4 pb-24">
+        {/* 2-Column Row for bookings and support */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* Card 1: Address */}
+          <Link 
+            href="/select-location"
+            className="flex flex-col items-center justify-center p-3 bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:border-primary/20 active:scale-95 cursor-pointer text-center"
+          >
+            <div className="p-2 bg-slate-50 text-slate-500 rounded-xl mb-1">
+              <MapPin className="w-5 h-5 text-[#1A3C34]" />
+            </div>
+            <span className="text-xs font-black text-slate-800">
+              Address
+            </span>
+          </Link>
+
+          {/* Card 2: Help & Support */}
+          <div 
+            onClick={() => window.open('https://wa.me/9103669564', '_blank')}
+            className="flex flex-col items-center justify-center p-3 bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:border-primary/20 active:scale-95 cursor-pointer text-center"
+          >
+            <div className="p-2 bg-slate-50 text-slate-500 rounded-xl mb-1">
+              <Headset className="w-5 h-5 text-[#1A3C34]" />
+            </div>
+            <span className="text-xs font-black text-slate-800">
+              Help & Support
+            </span>
+          </div>
         </div>
 
-        {/* Informational Group */}
-        <div className="mt-4">
+        {/* Combined menu block */}
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+          <div 
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({
+                  title: 'Check out this app!',
+                  text: 'Download this app to get expert services.',
+                  url: window.location.origin,
+                }).catch(console.error);
+              }
+            }}
+            className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 group active:bg-gray-100/50"
+          >
+            <div className="flex items-center gap-4">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                    <Share2 className="w-4 h-4" />
+                </div>
+                <span className="font-semibold text-[14px] text-gray-700">Share with friends</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-300" />
+          </div>
+          
+          <ProfileMenuItem icon={ClipboardList} label="My bookings" onClick={handleBookingsClick} />
           <ProfileMenuItem icon={Info} label="About us" href="/about" />
           <ProfileMenuItem icon={FileText} label="Terms & conditions" href="/terms" />
           <ProfileMenuItem icon={Shield} label="Privacy policy" href="/privacy" />
-          <ProfileMenuItem icon={Headset} label="Help & support" onClick={() => window.open('https://wa.me/9103669564', '_blank')} />
-        </div>
-
-        {/* Critical Actions Group */}
-        <div className="mt-4">
+          
           <ProfileMenuItem icon={Trash2} label="Request account deletion" onClick={() => {}} />
           
           <AlertDialog>

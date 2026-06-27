@@ -23,14 +23,14 @@ export default function SafePreviewPatch() {
           if (arg && typeof arg === 'object') {
             try {
               const seen = new Set();
-              JSON.stringify(arg, (key, value) => {
+              const serialized = JSON.stringify(arg, (key, value) => {
                 if (typeof value === 'object' && value !== null) {
                   if (seen.has(value)) return '[Circular Ref]';
                   seen.add(value);
                 }
                 return value;
               });
-              return arg;
+              return JSON.parse(serialized);
             } catch (e) {
               return `[Safe-Filtered Circular ${arg.constructor?.name || 'Object'}]`;
             }
@@ -43,8 +43,11 @@ export default function SafePreviewPatch() {
     };
 
     // Intercept standard logs before the preview iframe can read them
+    console.log = sanitizeLogArguments(console.log);
     console.error = sanitizeLogArguments(console.error);
     console.warn = sanitizeLogArguments(console.warn);
+    console.info = sanitizeLogArguments(console.info);
+    console.debug = sanitizeLogArguments(console.debug);
   }, []);
 
   return null;

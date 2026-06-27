@@ -128,9 +128,12 @@ function SearchResults() {
             
             {/* Found Banner */}
             {!loading && experts.length > 0 && (
-                <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-primary/10 text-primary border border-primary/10 text-xs font-black uppercase tracking-widest w-full justify-center">
-                    <Sparkles className="w-4 h-4 fill-current animate-pulse" />
-                    We found {experts.length} verified {experts.length === 1 ? 'expert' : 'experts'} near you
+                <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-teal-500/[0.06] border border-teal-500/10 text-[11px] font-extrabold text-teal-800 tracking-wide w-full justify-center shadow-sm backdrop-blur-[2px] animate-in fade-in duration-300">
+                    <div className="relative flex h-2 w-2 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+                    </div>
+                    <span>We found {experts.length} verified {experts.length === 1 ? 'expert' : 'experts'} near you</span>
                 </div>
             )}
 

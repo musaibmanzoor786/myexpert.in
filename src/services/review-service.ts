@@ -11,6 +11,8 @@ import {
   limit,
   serverTimestamp,
   query,
+  startAfter,
+  type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import type { Review } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -102,5 +104,32 @@ export async function getExpertReviews(expertId: string, limitCount = 20): Promi
   } catch (error) {
     console.error('Error fetching reviews:', error);
     return [];
+  }
+}
+
+export async function getExpertReviewsPaginated(
+  expertId: string,
+  limitCount = 3,
+  lastVisible?: QueryDocumentSnapshot
+): Promise<{ reviews: Review[]; lastVisible?: QueryDocumentSnapshot }> {
+  if (!db) return { reviews: [] };
+
+  try {
+    const reviewsRef = collection(db, 'experts', expertId, 'reviews');
+    let q = query(reviewsRef, orderBy('createdAt', 'desc'), limit(limitCount));
+    if (lastVisible) {
+      q = query(q, startAfter(lastVisible));
+    }
+    const snapshot = await getDocs(q);
+    const reviews = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Review[];
+
+    const lastDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : undefined;
+    return { reviews, lastVisible: lastDoc };
+  } catch (error) {
+    console.error('Error fetching reviews paginated:', error);
+    return { reviews: [] };
   }
 }

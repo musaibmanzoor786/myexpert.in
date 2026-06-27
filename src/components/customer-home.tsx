@@ -6,7 +6,8 @@ import {
     Search, Loader2, ChevronDown, Bell, MapPin, 
     ShieldCheck, ArrowRight, Wind, Sparkles as SparklesIcon, 
     Wrench as WrenchIcon, Zap as ZapIcon, Hammer as HammerIcon, 
-    PaintRoller as PaintRollerIcon, ChefHat as ChefHatIcon 
+    PaintRoller as PaintRollerIcon, ChefHat as ChefHatIcon, Star,
+    Cctv as CctvIcon, GraduationCap, Award, Clock
 } from "lucide-react";
 import { getCachedServices } from '@/services/service-cache';
 import { useAuth } from '@/context/auth-context';
@@ -16,26 +17,45 @@ import Link from 'next/link';
 import placeholderImages from '@/lib/placeholder-images.json';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
 import { cn, getDistance } from '@/lib/utils';
+import { whyChooseUsData } from '@/lib/constants';
 import { useLocationStore } from '@/lib/location-store';
 import { useRouter } from 'next/navigation';
 import Autoplay from 'embla-carousel-autoplay';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { getServicesAvailability } from '@/services/expert-service';
-import { useToast } from '@/hooks/use-toast';
 import { updateUserLocationAndAddress } from '@/services/user-service';
 import { UnserviceableArea } from '@/components/unserviceable-area';
 import type { Expert, Service } from '@/lib/types';
+import { ExpertCard } from './expert-card';
 import Image from 'next/image';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { handleFirestoreError, OperationType } from '@/firebase/errors';
 
-const topMinimalServices = [
-    { name: 'AC Repair', service: 'Electrician', icon: Wind, color: 'bg-indigo-50 border-indigo-100 text-indigo-500' },
-    { name: 'Deep Clean', service: 'Painter', icon: SparklesIcon, color: 'bg-emerald-50 border-emerald-100 text-emerald-500' },
-    { name: 'Plumber', service: 'Plumber', icon: WrenchIcon, color: 'bg-blue-50 border-blue-100 text-blue-500' },
-    { name: 'Electrician', service: 'Electrician', icon: ZapIcon, color: 'bg-amber-50 border-amber-100 text-amber-500' },
-    { name: 'Carpenter', service: 'Carpenter', icon: HammerIcon, color: 'bg-amber-50 border-amber-100 text-amber-700' },
-    { name: 'Painter', service: 'Painter', icon: PaintRollerIcon, color: 'bg-teal-50 border-teal-100 text-teal-600' },
-    { name: 'Home Cook', service: 'Cook', icon: ChefHatIcon, color: 'bg-rose-50 border-rose-100 text-rose-500' },
+const INITIAL_QUICK_SERVICES = [
+    { id: 'electrician', name: 'Electrician', service: 'Electrician', iconName: 'Zap', color: 'bg-amber-500/[0.06] border-amber-500/10 text-amber-600', clicks: 0 },
+    { id: 'plumber', name: 'Plumber', service: 'Plumber', iconName: 'Wrench', color: 'bg-blue-500/[0.06] border-blue-500/10 text-blue-600', clicks: 0 },
+    { id: 'ac', name: 'AC Service', service: 'Electrician', iconName: 'Wind', color: 'bg-teal-500/[0.06] border-teal-500/10 text-teal-600', clicks: 0 },
+    { id: 'clean', name: 'Deep Clean', service: 'Painter', iconName: 'Sparkles', color: 'bg-emerald-500/[0.06] border-emerald-500/10 text-emerald-600', clicks: 0 },
+    { id: 'carpenter', name: 'Carpenter', service: 'Carpenter', iconName: 'Hammer', color: 'bg-orange-500/[0.06] border-orange-500/10 text-orange-700', clicks: 0 },
+    { id: 'painter', name: 'Painter', service: 'Painter', iconName: 'PaintRoller', color: 'bg-sky-500/[0.06] border-sky-500/10 text-sky-600', clicks: 0 },
+    { id: 'cook', name: 'Home Cook', service: 'Cook', iconName: 'ChefHat', color: 'bg-rose-500/[0.06] border-rose-500/10 text-rose-500', clicks: 0 },
+    { id: 'cctv', name: 'CCTV Setup', service: 'Electrician', iconName: 'Cctv', color: 'bg-violet-500/[0.06] border-violet-500/10 text-violet-600', clicks: 0 },
 ];
+
+const getQuickServiceIcon = (iconName: string) => {
+    switch (iconName) {
+        case 'Wind': return Wind;
+        case 'Sparkles': return SparklesIcon;
+        case 'Wrench': return WrenchIcon;
+        case 'Zap': return ZapIcon;
+        case 'Hammer': return HammerIcon;
+        case 'PaintRoller': return PaintRollerIcon;
+        case 'ChefHat': return ChefHatIcon;
+        case 'Cctv': return CctvIcon;
+        default: return ZapIcon;
+    }
+};
 
 export function HomePage() {
     const { user, userProfile, loading: authLoading, pendingBookingsCount, setActiveTab } = useAuth();
@@ -47,8 +67,10 @@ export function HomePage() {
     const [isAreaServiceable, setIsAreaServiceable] = useState<boolean>(true);
     const [busyPopupMessage, setBusyPopupMessage] = useState<string | null>(null);
     const [nearbyExperts, setNearbyExperts] = useState<Expert[]>([]);
+    const [lastVisibleExpert, setLastVisibleExpert] = useState<any>(undefined);
+    const [hasMoreExperts, setHasMoreExperts] = useState(false);
+    const [loadingMoreExperts, setLoadingMoreExperts] = useState(false);
     
-    const { toast } = useToast();
     const [api, setApi] = useState<CarouselApi>()
     const [current, setCurrent] = useState(0)
     const [count, setCount] = useState(0)
@@ -153,25 +175,33 @@ export function HomePage() {
         }
     }, [authLoading, userProfile, user?.uid, lat, lng, setLocationInStore]);
 
-    // Load available experts near customer
+    // Load available experts near customer in real-time
     useEffect(() => {
-        async function fetchNearbyExperts() {
+        if (authLoading || !userProfile || userProfile.role !== 'customer') return;
+
+        setLoadingMoreExperts(true);
+        const path = 'experts';
+        const expertsQuery = query(collection(db, path));
+        
+        const unsubscribe = onSnapshot(expertsQuery, (snap) => {
+            let expertsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expert));
+            
+            // Ignore offline experts completely and ensure they are verified (or historically undefined)
+            expertsList = expertsList.filter(e => e.isVerified !== false && (e.isActive || e.online || e.workingNow || e.status === 'online' || e.status === 'busy'));
+
+            setNearbyExperts(expertsList);
+            setLoadingMoreExperts(false);
+        }, (err) => {
             try {
-                const { getExperts } = await import('@/services/expert-service');
-                const userLocation = lat && lng ? { lat, lng } : { lat: 34.0837, lng: 74.7973 };
-                const res = await getExperts({
-                    userLocation,
-                    limitCount: 15
-                });
-                setNearbyExperts(res.experts);
-            } catch (err) {
-                console.error("Error fetching nearby home experts:", err);
+                handleFirestoreError(err, OperationType.LIST, path);
+            } catch (e) {
+                console.error("Real-time experts collection error:", e);
             }
-        }
-        if (!authLoading && userProfile && userProfile.role === 'customer') {
-            fetchNearbyExperts();
-        }
-    }, [authLoading, userProfile, lat, lng]);
+            setLoadingMoreExperts(false);
+        });
+
+        return () => unsubscribe();
+    }, [authLoading, userProfile]);
 
     // Sort experts client-side using Haversine algorithm against saved coordinates
     const sortedHomeExperts = useMemo(() => {
@@ -187,7 +217,8 @@ export function HomePage() {
                 }
                 return { ...e, calculatedDistance: dist };
             })
-            .sort((a, b) => a.calculatedDistance - b.calculatedDistance);
+            .sort((a, b) => a.calculatedDistance - b.calculatedDistance)
+            .slice(0, 10);
     }, [nearbyExperts, lat, lng]);
 
     useEffect(() => {
@@ -345,24 +376,28 @@ export function HomePage() {
                 </div>
             </div>
 
-            {/* UPGRADE: Top Services scrollbar-hidden section */}
-            <section className="space-y-3 px-4">
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 pl-1">
-                    Top Services
-                </h3>
-                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1.5 px-1">
-                    {topMinimalServices.map((item, idx) => {
-                        const IconComponent = item.icon;
+            {/* UPGRADE: Top Services side scrollbar-hidden section */}
+            <section className="space-y-2 px-4">
+                <div className="flex justify-between items-center pl-1">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                        Quick Shortcuts
+                    </h3>
+                </div>
+                
+                <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-2 px-1">
+                    {INITIAL_QUICK_SERVICES.map((item) => {
+                        const IconComponent = getQuickServiceIcon(item.iconName);
+                        
                         return (
                             <button
-                                key={idx}
+                                key={item.id}
                                 onClick={() => router.push(`/search?service=${encodeURIComponent(item.service)}`)}
-                                className="flex flex-col items-center gap-1.5 shrink-0 group active:scale-95 transition-all text-center"
+                                className="flex flex-col items-center gap-1.5 p-1.5 w-[68px] shrink-0 rounded-[1rem] bg-white border border-slate-100 hover:border-primary/20 active:scale-95 transition-all text-center relative group shadow-sm"
                             >
-                                <div className={cn("w-14 h-14 rounded-full border flex items-center justify-center transition-all bg-white group-hover:shadow-sm", item.color)}>
-                                    <IconComponent className="w-5 h-5 shrink-0" />
+                                <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center transition-all group-hover:scale-105", item.color)}>
+                                    <IconComponent className="w-4.5 h-4.5 shrink-0 stroke-[2.2]" />
                                 </div>
-                                <span className="text-[10px] font-extrabold text-slate-700">
+                                <span className="text-[9px] font-black text-slate-700 leading-tight truncate w-full px-0.5">
                                     {item.name}
                                 </span>
                             </button>
@@ -376,14 +411,14 @@ export function HomePage() {
                 <div className="flex justify-between items-end pl-1">
                     <h2 className="text-base font-black tracking-tight text-slate-800">Popular Services</h2>
                 </div>
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                     {topServices.map(service => {
                         return (
                             <Link 
                                 href={`/book/${service.name.toLowerCase()}`} 
                                 key={service.name} 
                                 className={cn(
-                                    "flex flex-col items-center gap-1.5 group active:scale-90 transition-all text-center"
+                                    "flex flex-col items-center gap-1.5 group transition-all text-center"
                                 )}
                             >
                                 <div className="aspect-square w-full bg-white rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:bg-primary/5 border border-slate-100 shadow-sm overflow-hidden p-0 relative">
@@ -411,66 +446,176 @@ export function HomePage() {
                 </div>
             </section>
 
-            {/* UPGRADE: Top Experts Near You slide list */}
-            {sortedHomeExperts.length > 0 && (
-                <section className="space-y-3 px-4 mt-6">
-                    <div className="flex justify-between items-center pl-1">
-                        <h2 className="text-base font-black tracking-tight text-slate-800">Top Experts Near You</h2>
+            {/* UPGRADE: Top Experts Near You section */}
+            <section className="space-y-3 px-4 mt-6">
+                <div className="flex justify-between items-center pl-1">
+                    <h2 className="text-base font-black tracking-tight text-slate-800">Top Experts Near You</h2>
+                </div>
+
+                {/* Skeletons/Loaders for initial loading */}
+                {loadingMoreExperts && sortedHomeExperts.length === 0 ? (
+                    <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="flex gap-4 p-4 bg-white border border-slate-100 rounded-[2rem] animate-pulse shadow-sm">
+                                <div className="w-16 h-16 bg-slate-100 rounded-[1.5rem] shrink-0" />
+                                <div className="flex-1 space-y-2 py-1">
+                                    <div className="h-4 bg-slate-100 rounded w-1/3" />
+                                    <div className="h-3 bg-slate-100 rounded w-1/2" />
+                                    <div className="h-3 bg-slate-100 rounded w-1/4" />
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                    <div className="flex gap-4 overflow-x-auto no-scrollbar pb-3 px-1">
+                ) : sortedHomeExperts.length > 0 ? (
+                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-3 px-1 snap-x snap-mandatory">
                         {sortedHomeExperts.map((expert) => {
+                            const isBusy = expert.status === 'busy';
                             const initial = expert.name?.trim().split(/\s+/).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'EX';
                             return (
-                                <div 
+                                <Card 
                                     key={expert.id}
-                                    onClick={() => router.push(`/experts/${expert.id}`)}
-                                    className="w-40 bg-white border border-slate-100 shadow-sm rounded-[2rem] p-4 shrink-0 flex flex-col items-center text-center cursor-pointer hover:border-primary/20 hover:shadow-md active:scale-95 transition-all group"
+                                    onClick={() => {
+                                        if (!isBusy) {
+                                            if (typeof window !== 'undefined') {
+                                                sessionStorage.setItem(`expert_profile_${expert.id}`, JSON.stringify(expert));
+                                            }
+                                            router.push(`/experts/${expert.id}`);
+                                        }
+                                    }}
+                                    className={cn(
+                                        "w-[calc(50%-6px)] min-w-[155px] snap-start shrink-0 overflow-hidden border border-slate-100 bg-white shadow-sm transition-all duration-300 rounded-[1.5rem]",
+                                        isBusy 
+                                            ? "opacity-60 saturate-50 cursor-not-allowed" 
+                                            : "hover:shadow-md hover:border-primary/20 cursor-pointer"
+                                    )}
                                 >
-                                    {/* Avatar/Badge representation */}
-                                    <div className="relative mb-3">
-                                        <div className="w-16 h-16 rounded-[1.75rem] bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center relative">
-                                            {expert.profilePictureUrl ? (
-                                                <Image 
-                                                    src={expert.profilePictureUrl} 
-                                                    alt={expert.name} 
-                                                    width={64} 
-                                                    height={64}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
-                                                    referrerPolicy="no-referrer"
-                                                />
-                                            ) : (
-                                                <span className="text-sm font-black text-primary">{initial}</span>
-                                            )}
-                                        </div>
-                                        {expert.isVerified && (
-                                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white">
-                                                ✓
+                                    <CardContent className="p-3 flex flex-col items-center text-center space-y-2">
+                                        {/* Avatar with status/busy badge */}
+                                        <div className="relative">
+                                            <div className="w-14 h-14 rounded-[1.25rem] bg-slate-50 border border-slate-100 overflow-hidden flex items-center justify-center">
+                                                {expert.profilePictureUrl ? (
+                                                    <Image 
+                                                        src={expert.profilePictureUrl} 
+                                                        alt={expert.name} 
+                                                        width={56} 
+                                                        height={56}
+                                                        className="w-full h-full object-cover" 
+                                                        referrerPolicy="no-referrer"
+                                                    />
+                                                ) : (
+                                                    <span className="text-xs font-black text-primary">{initial}</span>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
-                                    
-                                    <h4 className="text-xs font-black text-slate-805 line-clamp-1 truncate w-full group-hover:text-primary transition-colors">
-                                        {expert.name}
-                                    </h4>
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest line-clamp-1 mt-0.5 mt-1 truncate w-full">
-                                        {expert.title || expert.serviceType}
-                                    </p>
-                                    
-                                    <div className="flex flex-col items-center gap-1 mt-3 w-full bg-slate-50 rounded-2xl p-2 border border-slate-100/50">
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-amber-500 text-xs">★</span>
-                                            <span className="text-[10px] font-black">{expert.rating || 'New'}</span>
+                                            {/* Status Badge */}
+                                            <div className={cn(
+                                                "absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase text-white border border-white shadow-sm",
+                                                isBusy ? "bg-orange-500" : "bg-green-500"
+                                            )}>
+                                                {isBusy ? 'Busy' : 'Online'}
+                                            </div>
                                         </div>
-                                        <span className="text-[10px] font-extrabold text-primary whitespace-nowrap">
-                                            📍 {expert.calculatedDistance ? `${expert.calculatedDistance.toFixed(1)} km away` : 'Nearby'}
-                                        </span>
-                                    </div>
-                                </div>
+
+                                        {/* Name & Title */}
+                                        <div className="w-full">
+                                            <h4 className="text-xs font-black text-slate-800 line-clamp-1 truncate">
+                                                {expert.name}
+                                            </h4>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest line-clamp-1 mt-0.5 truncate">
+                                                {expert.title || (Array.isArray(expert.serviceType) ? expert.serviceType[0] : expert.serviceType)}
+                                            </p>
+                                        </div>
+
+                                        {/* Rating & Distance */}
+                                        <div className="flex items-center justify-center gap-2 w-full text-[9px] font-bold text-slate-500">
+                                            <div className="flex items-center gap-0.5">
+                                                <Star className="w-3 h-3 text-amber-500 fill-current" />
+                                                <span>{expert.rating || 'New'}</span>
+                                            </div>
+                                            <span>•</span>
+                                            <span className="text-primary truncate max-w-[80px]">
+                                                {expert.calculatedDistance ? `${expert.calculatedDistance.toFixed(1)} km` : 'Nearby'}
+                                            </span>
+                                        </div>
+
+                                        {/* Action button */}
+                                        <Button 
+                                            variant={isBusy ? "secondary" : "default"}
+                                            disabled={isBusy}
+                                            className="w-full h-8 text-[10px] font-black uppercase tracking-wider rounded-xl py-1 mt-1"
+                                        >
+                                            {isBusy ? 'Busy' : 'Book Now'}
+                                        </Button>
+                                    </CardContent>
+                                </Card>
                             );
                         })}
                     </div>
-                </section>
-            )}
+                ) : (
+                    <p className="text-center text-xs font-medium text-slate-400 py-6 bg-white border border-slate-100 rounded-[2rem] shadow-sm">
+                        No nearby active experts found.
+                    </p>
+                )}
+            </section>
+
+
+
+            {/* Why Choose Us */}
+            <div className="border-b border-slate-100 p-5 space-y-4">
+                {/* Heading & Subheading */}
+                <div className="space-y-1 pl-1">
+                    <h3 className="text-sm font-black text-slate-800 tracking-tight">Why Choose Us?</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Verified experts for every service you need.
+                    </p>
+                </div>
+
+                {/* 3 columns of visual cards showing experts and text below them */}
+                <div className="grid grid-cols-3 gap-6">
+                    {whyChooseUsData.map((item, index) => (
+                        <div key={index} className="flex flex-col items-center space-y-3">
+                            <div className="w-full aspect-[2/3] rounded-[2rem] overflow-hidden border border-slate-100 relative bg-slate-50 shadow-inner">
+                                <Image 
+                                    src={item.imageUrl} 
+                                    alt={item.title} 
+                                    fill
+                                    className="object-cover"
+                                    referrerPolicy="no-referrer"
+                                />
+                            </div>
+                            <p className="text-[10px] font-black text-slate-600 text-center leading-snug">
+                                {item.title}: {item.description}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Brand Promo Banner */}
+            <div className="py-8 flex flex-col items-center">
+                {/* Brand Name */}
+                <div className="text-center z-10 mb-2">
+                    <span className="text-5xl font-black text-primary tracking-tight block">MyExpert</span>
+                    <span className="text-sm font-bold text-slate-600 mt-1 block">
+                        Trusted Experts for Everyday Needs
+                    </span>
+                </div>
+
+                {/* Three core pillars */}
+                <div className="w-[90%] mx-auto mt-6 bg-slate-100 rounded-2xl p-4 flex justify-between items-center z-10 border border-slate-200">
+                    <div className="flex flex-col items-center text-center space-y-2">
+                        <ShieldCheck className="w-6 h-6 text-primary" />
+                        <span className="text-xs font-black text-slate-700">Verified</span>
+                    </div>
+                    <div className="flex flex-col items-center text-center space-y-2">
+                        <HammerIcon className="w-6 h-6 text-primary" />
+                        <span className="text-xs font-black text-slate-700">Skilled</span>
+                    </div>
+                    <div className="flex flex-col items-center text-center space-y-2">
+                        <Clock className="w-6 h-6 text-primary" />
+                        <span className="text-xs font-black text-slate-700">Reliable</span>
+                    </div>
+                </div>
+            </div>
 
             <p className="text-center text-xs font-medium text-slate-400 px-5 mt-6 mb-10">
                 The more you book, the more services we will bring.

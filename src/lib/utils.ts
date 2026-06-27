@@ -39,7 +39,12 @@ export function safeStore(key: string, data: any) {
 }
 
 export function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  if (!lat1 || !lon1 || !lat2 || !lon2) {
+  if (
+    lat1 === undefined || lat1 === null || isNaN(lat1) ||
+    lon1 === undefined || lon1 === null || isNaN(lon1) ||
+    lat2 === undefined || lat2 === null || isNaN(lat2) ||
+    lon2 === undefined || lon2 === null || isNaN(lon2)
+  ) {
     return Infinity;
   }
   const R = 6371; // Radius of the Earth in km
